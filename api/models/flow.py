@@ -19,29 +19,11 @@ class Comparison(models.TextChoices):
 
 
 class Flow(BaseModel):
-    class FlowEndAction(models.TextChoices):
-        WEBHOOK = 'WEBHOOK', 'Webhook'
-        NO_ACTION = 'NO_ACTION', 'No action'
-
-    class ExecutionType(models.TextChoices):
-        INBOUND = 'INBOUND', 'Inbound'
-        OUTBOUND = 'OUTBOUND', 'Outbound'
-
     id = models.UUIDField(default=uuid4, primary_key=True)
     team = models.ForeignKey('api.Team',
                              on_delete=models.CASCADE,
                              related_name='flows')
     name = models.CharField(max_length=100)
-    created_by = models.ForeignKey('auth.User',
-                                   on_delete=models.CASCADE)
-
-    is_active = models.BooleanField(default=True)
-    is_deleted = models.BooleanField(default=False)
-
-    # Execution
-    execution_type = models.CharField(max_length=20,
-                                      choices=ExecutionType.choices)
-
     first_step = models.ForeignKey('api.FlowStep',
                                    on_delete=models.CASCADE,
                                    blank=True, null=True,

@@ -1,3 +1,4 @@
+from typing import OrderedDict
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -23,19 +24,16 @@ class FlowExecutionAPITest(TestCase):
     def login(self):
         self.client.force_authenticate(user=self.user)
 
-    def test_download_results_csv(self):
+    def test_can_order_results(self):
         # Create flow
         flow = models.Flow.objects.create(
-            name='Inbound test',
-            team=self.team,
-            execution_type=models.Flow.ExecutionType.INBOUND,
-            is_active=True,
-            created_by=self.user)
+            name='Test',
+            team=self.team)
 
         # Add steps, joined through next_step_default
         step_q_2 = models.FlowStep.objects.create(
             flow=flow,
-            name="Question 2: B",
+            name="Question 2",
             step_type=models.flow_step.StepType.QUESTION,
             body_type=models.FlowStep.BodyType.TEXT,
             answer_type=models.FlowStep.AnswerType.FREE_TEXT,
@@ -47,12 +45,12 @@ class FlowExecutionAPITest(TestCase):
             next_step_default=step_q_2)
         step_q = models.FlowStep.objects.create(
             flow=flow,
-            name="Question 1: A",
+            name="Question 1",
             step_type=models.flow_step.StepType.QUESTION,
             body_type=models.FlowStep.BodyType.TEXT,
             answer_type=models.FlowStep.AnswerType.SINGLE_OPTION,
             answer_options='Óption 1, Option 2',
-            body="Hey wassup grl, which option do ya want",
+            body="Hey, which option do ya want",
             next_step_default=step_c)
 
         # Set flow first step
@@ -66,11 +64,7 @@ class FlowExecutionAPITest(TestCase):
 
         # Create flow execution
         flow_execution = models.FlowExecution.objects.create(
-            flow=flow,
-            created_by=self.user,
-            execution_type=models.FlowExecution.ExecutionType.INBOUND,
-            execute_for=models.FlowExecution.ExecutionFor.ALL,
-            inbound_start_message='Hi!')
+            flow=flow)
 
         # Create flow execution for contact
         flow_execution_contact = models.FlowExecutionContact.objects.create(
@@ -78,6 +72,81 @@ class FlowExecutionAPITest(TestCase):
             contact=contact)
 
         # Create flow execution steps for contact
+        # (only 2 steps have been completed)
+        flow_execution_step_q = models.FlowExecutionStep.objects.create(
+            flow_execution_contact=flow_execution_contact,
+            step=step_q,
+            status=models.FlowExecutionStep.Status.COMPLETED,
+            execution_result={'answer': 'Option 1'})
+        flow_execution_step_c = models.FlowExecutionStep.objects.create(
+            flow_execution_contact=flow_execution_contact,
+            step=step_c,
+            status=models.FlowExecutionStep.Status.COMPLETED,
+            execution_result={'conditional': True})
+
+        # We expect an ordered result dict like
+        # {Step1: Result1, Step2: Result2, ...}
+        # If a step does not have a result, return an empty string
+        expected_dict = OrderedDict()
+        expected_dict.update({
+            step_q.name: flow_execution_step_q.execution_result['answer']})
+        expected_dict.update({
+            step_c.name: flow_execution_step_c.execution_result['conditional']})
+        expected_dict.update({
+            step_q_2.name: ''})
+
+        result_dict = flow_execution.get_results_list()
+        self.assertEqual(expected_dict, result_dict)
+
+    def test_download_results_csv(self):
+        # Create flow
+        flow = models.Flow.objects.create(
+            name='Test',
+            team=self.team)
+
+        # Add steps, joined through next_step_default
+        step_q_2 = models.FlowStep.objects.create(
+            flow=flow,
+            name="Question 2",
+            step_type=models.flow_step.StepType.QUESTION,
+            body_type=models.FlowStep.BodyType.TEXT,
+            answer_type=models.FlowStep.AnswerType.FREE_TEXT,
+            body="Another question")
+        step_c = models.FlowStep.objects.create(
+            flow=flow,
+            name="Conditional",
+            step_type=models.flow_step.StepType.CONDITIONAL,
+            next_step_default=step_q_2)
+        step_q = models.FlowStep.objects.create(
+            flow=flow,
+            name="Question 1",
+            step_type=models.flow_step.StepType.QUESTION,
+            body_type=models.FlowStep.BodyType.TEXT,
+            answer_type=models.FlowStep.AnswerType.SINGLE_OPTION,
+            answer_options='Óption 1, Option 2',
+            body="Hey, which option do ya want",
+            next_step_default=step_c)
+
+        # Set flow first step
+        flow.first_step = step_q
+        flow.save()
+
+        # Create contact
+        contact = models.Contact.objects.create(
+            phone='+525576565090',
+            team=self.team)
+
+        # Create flow execution
+        flow_execution = models.FlowExecution.objects.create(
+            flow=flow)
+
+        # Create flow execution for contact
+        flow_execution_contact = models.FlowExecutionContact.objects.create(
+            flow_execution=flow_execution,
+            contact=contact)
+
+        # Create flow execution steps for contact
+        # (only 2 steps have been completed)
         flow_execution_step_q = models.FlowExecutionStep.objects.create(
             flow_execution_contact=flow_execution_contact,
             step=step_q,
