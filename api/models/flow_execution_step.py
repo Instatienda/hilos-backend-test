@@ -6,13 +6,6 @@ from api.models.base import BaseModel
 
 
 class FlowExecutionStep(BaseModel):
-    class Status(models.TextChoices):
-        WAITING_TO_START = 'WAITING_TO_START'
-        NOT_EXECUTED = 'NOT_EXECUTED'
-        RUNNING = 'RUNNING'
-        COMPLETED = 'COMPLETED'
-        CANCELED = 'CANCELED'
-
     id = models.UUIDField(default=uuid4, primary_key=True)
     flow_execution_contact = models.ForeignKey('api.FlowExecutionContact',
                                                on_delete=models.CASCADE,
@@ -20,10 +13,6 @@ class FlowExecutionStep(BaseModel):
     step = models.ForeignKey('api.FlowStep',
                              on_delete=models.CASCADE,
                              related_name='execution_steps')
-    status = models.CharField(max_length=20,
-                              choices=Status.choices,
-                              default=Status.WAITING_TO_START)
-
     execution_result = models.JSONField(blank=True, null=True)
 
     class Meta():

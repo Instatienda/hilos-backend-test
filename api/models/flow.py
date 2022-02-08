@@ -5,19 +5,6 @@ from uuid import uuid4
 from api.models.base import BaseModel
 
 
-class Comparison(models.TextChoices):
-    EXACT = 'exact'
-    DIFFERENT = '!exact'
-    GTE = 'gte'
-    GT = 'gt'
-    LTE = 'lte'
-    LT = 'lt'
-    IS_NULL = 'isnull'
-    NOT_NULL = '!isnull'
-    CONTAINS = 'icontains'
-    NOT_CONTAINS = '!icontains'
-
-
 class Flow(BaseModel):
     id = models.UUIDField(default=uuid4, primary_key=True)
     team = models.ForeignKey('api.Team',

@@ -33,24 +33,21 @@ class FlowExecutionAPITest(TestCase):
         # Add steps, joined through next_step_default
         step_q_2 = models.FlowStep.objects.create(
             flow=flow,
-            name="Question 2",
+            name="Another Question S3",
             step_type=models.flow_step.StepType.QUESTION,
-            body_type=models.FlowStep.BodyType.TEXT,
             answer_type=models.FlowStep.AnswerType.FREE_TEXT,
             body="Another question")
         step_c = models.FlowStep.objects.create(
             flow=flow,
-            name="Conditional",
+            name="Conditional S2",
             step_type=models.flow_step.StepType.CONDITIONAL,
             next_step_default=step_q_2)
         step_q = models.FlowStep.objects.create(
             flow=flow,
-            name="Question 1",
+            name="Question S1",
             step_type=models.flow_step.StepType.QUESTION,
-            body_type=models.FlowStep.BodyType.TEXT,
             answer_type=models.FlowStep.AnswerType.SINGLE_OPTION,
-            answer_options='Óption 1, Option 2',
-            body="Hey, which option do ya want",
+            body="Hey, which option do ya want?",
             next_step_default=step_c)
 
         # Set flow first step
@@ -76,18 +73,21 @@ class FlowExecutionAPITest(TestCase):
         flow_execution_step_q = models.FlowExecutionStep.objects.create(
             flow_execution_contact=flow_execution_contact,
             step=step_q,
-            status=models.FlowExecutionStep.Status.COMPLETED,
             execution_result={'answer': 'Option 1'})
         flow_execution_step_c = models.FlowExecutionStep.objects.create(
             flow_execution_contact=flow_execution_contact,
             step=step_c,
-            status=models.FlowExecutionStep.Status.COMPLETED,
             execution_result={'conditional': True})
 
-        # We expect an ordered result dict like
-        # {Step1: Result1, Step2: Result2, ...}
+        # We expect a list with ordered result dicts like
+        # [
+        #   {Phone: 123, Step1: Result1, Step2: Result2, ...},
+        #   {Phone: 123, Step1: Result1, Step2: Result2, ...}
+        # ]
         # If a step does not have a result, return an empty string
         expected_dict = OrderedDict()
+        expected_dict.update({
+            'Phone': contact.phone})
         expected_dict.update({
             step_q.name: flow_execution_step_q.execution_result['answer']})
         expected_dict.update({
@@ -95,8 +95,8 @@ class FlowExecutionAPITest(TestCase):
         expected_dict.update({
             step_q_2.name: ''})
 
-        result_dict = flow_execution.get_results_list()
-        self.assertEqual(expected_dict, result_dict)
+        result_list = flow_execution.get_results_list()
+        self.assertEqual([expected_dict, ], result_list)
 
     def test_download_results_csv(self):
         # Create flow
@@ -109,7 +109,6 @@ class FlowExecutionAPITest(TestCase):
             flow=flow,
             name="Question 2",
             step_type=models.flow_step.StepType.QUESTION,
-            body_type=models.FlowStep.BodyType.TEXT,
             answer_type=models.FlowStep.AnswerType.FREE_TEXT,
             body="Another question")
         step_c = models.FlowStep.objects.create(
@@ -121,9 +120,7 @@ class FlowExecutionAPITest(TestCase):
             flow=flow,
             name="Question 1",
             step_type=models.flow_step.StepType.QUESTION,
-            body_type=models.FlowStep.BodyType.TEXT,
             answer_type=models.FlowStep.AnswerType.SINGLE_OPTION,
-            answer_options='Óption 1, Option 2',
             body="Hey, which option do ya want",
             next_step_default=step_c)
 
@@ -150,12 +147,10 @@ class FlowExecutionAPITest(TestCase):
         flow_execution_step_q = models.FlowExecutionStep.objects.create(
             flow_execution_contact=flow_execution_contact,
             step=step_q,
-            status=models.FlowExecutionStep.Status.COMPLETED,
             execution_result={'answer': 'Option 1'})
         flow_execution_step_c = models.FlowExecutionStep.objects.create(
             flow_execution_contact=flow_execution_contact,
             step=step_c,
-            status=models.FlowExecutionStep.Status.COMPLETED,
             execution_result={'conditional': True})
 
         self.login()

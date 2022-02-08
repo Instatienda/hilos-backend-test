@@ -6,14 +6,6 @@ from api.models.base import BaseModel
 
 
 class FlowExecutionContact(BaseModel):
-    class Status(models.TextChoices):
-        READY = 'READY'
-        RUNNING = 'RUNNING'
-        COMPLETED = 'COMPLETED'
-        CANCELED = 'CANCELED'
-        STOPPED = 'STOPPED'
-        EXPIRED = 'EXPIRED'
-
     id = models.UUIDField(default=uuid4, primary_key=True)
     flow_execution = models.ForeignKey('api.FlowExecution',
                                        on_delete=models.CASCADE,
@@ -21,10 +13,6 @@ class FlowExecutionContact(BaseModel):
     contact = models.ForeignKey('api.Contact',
                                 on_delete=models.CASCADE,
                                 related_name='flow_executions')
-
-    status = models.CharField(max_length=50,
-                              choices=Status.choices,
-                              default=Status.READY)
 
     class Meta():
         ordering = ['flow_execution', 'created_on']
