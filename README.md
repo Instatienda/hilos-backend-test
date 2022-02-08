@@ -28,3 +28,7 @@ Fix `api.test.test_flow_execution_api`.
 - `FlowExecution`: An execution run
 - `FlowExecutionContact`: An execution run for a specific contact
 - `FlowExecutionStep`: An execution run of a specific flow step for a specific contact. If the step is of type QUESTION or CONDITIONAL there will be a result if the step was executed
+
+### Basic ER diagram
+![IMG_0271](https://user-images.githubusercontent.com/3419377/153089340-1907e86b-a68e-43f0-98ee-83b005b9dc45.jpg)
+
