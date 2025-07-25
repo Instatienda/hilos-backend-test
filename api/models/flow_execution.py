@@ -15,7 +15,7 @@ class FlowExecution(BaseModel):
         ordering = ['flow', '-created_on']
 
     def __str__(self):
-        return f'{self.flow} - {self.execution_type} - {self.status}'
+        return f'Execution for {self.flow}'
 
     def get_results_list(self):
         raise NotImplementedError('finish me!')
